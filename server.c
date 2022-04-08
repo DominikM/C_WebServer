@@ -11,8 +11,6 @@
 #include <arpa/inet.h>
 #include <poll.h>
 
-#define BACKLOG 10
-
 typedef struct ServerConfig ServerConfig;
 struct ServerConfig {
   char* port;
