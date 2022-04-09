@@ -19,6 +19,27 @@ struct ServerConfig {
   int num_conns;
 };
 
+typedef struct Header Header;
+struct Header {
+  char* name;
+  char* value;
+};
+
+typedef enum HttpToken HttpToken;
+enum HttpToken {GET, HEAD};
+
+typedef enum HttpVersion HttpVersion;
+enum HttpVersion {Http1_1};
+
+typedef struct HttpRequest HttpRequest;
+struct HttpRequest {
+  HttpToken token;
+  char* target;
+  HttpVersion version;
+  Header* headers;
+  char* body;
+};  
+
 void* get_in_addr(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
