@@ -29,7 +29,7 @@ typedef enum HttpToken HttpToken;
 enum HttpToken {GET, HEAD};
 
 typedef enum HttpVersion HttpVersion;
-enum HttpVersion {Http1_1};
+enum HttpVersion {HTTP1_1};
 
 typedef struct HttpRequest HttpRequest;
 struct HttpRequest {
@@ -162,6 +162,76 @@ int handle_listener(int* pfd_count, int const num_conns,
   return 0;
 }
 
+int parse_request_line(char req_line[], HttpRequest* hr) {
+  char* end_token = strchr(req_line, ' ');
+  if (end_token == NULL) {
+    return -1;
+  }
+  
+  int token_size = end_token - req_line;
+  if (token_size == 3 && strcmp(req_line, "GET") == 0) {
+    hr->token = GET;
+  } else if (token_size == 4 && strcmp(req_line, "HEAD") == 0) {
+    hr->token = HEAD;
+  } else {
+    return -1;
+  }
+
+  char* start_target = end_token + 1;
+  char* end_target = strchr(start_target, ' ');
+  if (end_target == NULL) {
+    return -1;
+  }
+
+  int target_size = end_target - start_target;
+  hr->target = malloc((target_size + 1) * sizeof(char));
+  strncpy(hr->target, start_target, target_size);
+  hr->target[target_size] = '\0';
+
+  char* start_version = end_target + 1;
+  int version_size = strlen(start_version);
+  if (version_size == 8 && strcmp(start_version, "HTTP/1.1") == 0) {
+    hr->version = HTTP1_1;
+  } else {
+    return -1;
+  }
+
+  printf("token: %d\ntarget: %s\nversion: %d\n", hr->token, hr->target, hr->version);
+  
+  return 0;
+}
+
+int parse_http_request(char req[], HttpRequest* hr) {
+  char* end_request_line = strstr(req, "\r\n");
+  if (end_request_line == NULL) {
+    return -1;
+  }
+  int request_line_size = end_request_line - req;
+  char request_line[request_line_size + 1];
+  strncpy(request_line, req, request_line_size);
+  request_line[request_line_size] = '\0';
+
+  if (parse_request_line(request_line, hr) == -1) {
+    return -1;
+  }
+      
+}
+
+int free_http_request(HttpRequest* hr) {
+  free(hr->target);
+  free(hr->body);
+}
+
+int get_response(char req[], char resp[] ) {
+  HttpRequest hr = {0};
+  
+  if (parse_http_request(req, &hr) == -1) {
+    return -1;
+  }
+  free_http_request(&hr);
+  return 0;
+}
+
 int handle_client(int pfd_i, int* pfd_count, struct pollfd pfds[]) {
   char buf[1000] = {0};
   int sender_fd = pfds[pfd_i].fd;
@@ -175,7 +245,7 @@ int handle_client(int pfd_i, int* pfd_count, struct pollfd pfds[]) {
     close(sender_fd);
     del_from_pfds(pfds, pfd_i, pfd_count);
   } else {
-    printf("received:\n%s", buf);
+    get_response(buf, NULL);
   }
   return 0;
 }
