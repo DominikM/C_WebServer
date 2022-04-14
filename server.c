@@ -23,6 +23,7 @@ typedef struct Header Header;
 struct Header {
   char* name;
   char* value;
+  Header* next;
 };
 
 typedef enum HttpToken HttpToken;
@@ -200,7 +201,28 @@ int parse_request_line(char req_line[], HttpRequest* hr) {
 }
 
 int parse_header_field(char header_field[], HttpRequest* hr) {
-  printf("%s\n", header_field);
+  char* first_whitespace = strchr(header_field, ' ');
+  char* colon = strchr(header_field, ':');
+
+  if (first_whitespace != NULL && first_whitespace < colon) {
+    return -1;
+  }
+
+  Header* header;
+  if (hr->headers == NULL) {
+    hr->headers = malloc(sizeof(Header));
+    header = hr->headers;
+  } else {  
+    for (header = hr->headers; header->next != NULL; header = header->next);
+    header->next = malloc(sizeof(Header));
+    header = header->next;
+  }
+  *header = (Header){0};
+
+  header->name = malloc(sizeof(char) * (colon - header_field + 1));
+  strncpy(header->name, header_field, colon - header_field + 1);
+  header->name[colon - header_field] = '\0';
+  
   return 0;
 }
 
@@ -217,7 +239,7 @@ int parse_http_request(char req[], HttpRequest* hr) {
   if (parse_request_line(request_line, hr) == -1) {
     return -1;
   }
-
+  
   char* start_header = end_request_line + 2;
   char* crlf = strstr(start_header, "\r\n");
   while (start_header != crlf) {
@@ -232,12 +254,21 @@ int parse_http_request(char req[], HttpRequest* hr) {
     crlf = strstr(start_header, "\r\n");
   }
 
-      
+  return 0;
 }
 
 int free_http_request(HttpRequest* hr) {
   free(hr->target);
   free(hr->body);
+
+  Header* header = hr->headers;
+  while (header != NULL) {
+    Header* tmp = header;
+    header = tmp->next;
+    free(tmp->name);
+    free(tmp->value);
+    free(tmp);
+  }
 }
 
 int get_response(char req[], char resp[] ) {
