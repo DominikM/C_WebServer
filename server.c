@@ -196,8 +196,11 @@ int parse_request_line(char req_line[], HttpRequest* hr) {
     return -1;
   }
 
-  printf("token: %d\ntarget: %s\nversion: %d\n", hr->token, hr->target, hr->version);
-  
+  return 0;
+}
+
+int parse_header_field(char header_field[], HttpRequest* hr) {
+  printf("%s\n", header_field);
   return 0;
 }
 
@@ -214,6 +217,21 @@ int parse_http_request(char req[], HttpRequest* hr) {
   if (parse_request_line(request_line, hr) == -1) {
     return -1;
   }
+
+  char* start_header = end_request_line + 2;
+  char* crlf = strstr(start_header, "\r\n");
+  while (start_header != crlf) {
+    char header_field[crlf - start_header + 1];
+    strncpy(header_field, start_header, crlf - start_header);
+    header_field[crlf - start_header] = '\0';
+    if (parse_header_field(header_field, hr) == -1) {
+      return -1;
+    }
+
+    start_header = crlf + 2;
+    crlf = strstr(start_header, "\r\n");
+  }
+
       
 }
 
