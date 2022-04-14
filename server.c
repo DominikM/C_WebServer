@@ -169,9 +169,9 @@ int parse_request_line(char req_line[], HttpRequest* hr) {
   }
   
   int token_size = end_token - req_line;
-  if (token_size == 3 && strcmp(req_line, "GET") == 0) {
+  if (token_size == 3 && strncmp(req_line, "GET", token_size) == 0) {
     hr->token = GET;
-  } else if (token_size == 4 && strcmp(req_line, "HEAD") == 0) {
+  } else if (token_size == 4 && strncmp(req_line, "HEAD", token_size) == 0) {
     hr->token = HEAD;
   } else {
     return -1;
